@@ -1,27 +1,39 @@
 import { symbol, register, unregister, transfer, serialize, deserialize } from './index.js';
 
-let { BroadcastChannel, MessageChannel, MessagePort, SerializationRegistry, Worker } = globalThis;
+let {
+  BroadcastChannel,
+  MessageChannel,
+  MessagePort,
+  Worker,
+
+  structuredClone,
+  SerializationRegistry,
+} = globalThis;
 
 if (!SerializationRegistry) {
   const { defineProperty, getOwnPropertyDescriptor } = Object;
 
   const patchMessages = ({ prototype }) => {
-    const { get, set } = getOwnPropertyDescriptor(prototype, 'onmessage');
-    const { postMessage } = prototype;
-    defineProperty(prototype, 'onmessage', {
-      get,
-      set(value) {
-        return set.call(this, value ?
-          (event => value(reviveData(event))) :
-          value
-        );
-      }
-    });
-    defineProperty(prototype, 'postMessage', {
-      value(data, ...args) {
-        return postMessage.call(this, serialize(data), ...args);
-      }
-    });
+    const descriptor = getOwnPropertyDescriptor(prototype, 'onmessage');
+    if (descriptor) {
+      const { set } = descriptor;
+      defineProperty(prototype, 'onmessage', {
+        ...descriptor,
+        set(value) {
+          return set.call(this, value ?
+            (event => value(reviveData(event))) :
+            value
+          );
+        }
+      });
+
+      const { postMessage } = prototype;
+      defineProperty(prototype, 'postMessage', {
+        value(data, ...args) {
+          return postMessage.call(this, serialize(data), ...args);
+        }
+      });
+    }
   };
 
   const reviveData = event => {
@@ -72,6 +84,8 @@ if (!SerializationRegistry) {
     };
   }
 
+  patchMessages({ prototype: globalThis });
+
   SerializationRegistry = {
     configurable: true,
     value: {
@@ -81,8 +95,16 @@ if (!SerializationRegistry) {
       transfer,
     },
   };
-  patchMessages({ prototype: globalThis });
   defineProperty(globalThis, 'SerializationRegistry', SerializationRegistry);
+
+  defineProperty(globalThis, 'structuredClone', {
+    value: (value, options) => deserialize(
+      structuredClone(
+        serialize(value),
+        options
+      )
+    ),
+  });
 }
 
 export default SerializationRegistry;
