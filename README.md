@@ -1,5 +1,7 @@
 # @ungap/serialization-registry
 
+[![Coverage Status](https://coveralls.io/repos/github/WebReflection/serialization-registry/badge.svg?branch=main)](https://coveralls.io/github/WebReflection/serialization-registry?branch=main)
+
 A proposal to transport structured clone and post message complex references.
 
 **[WHATWG related discussion](https://github.com/whatwg/html/issues/7428#issuecomment-2888486503)**
