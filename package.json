@@ -6,7 +6,8 @@
   "module": "index.js",
   "type": "module",
   "scripts": {
-    "test": "c8 node test/index.js"
+    "test": "c8 node test/index.js",
+    "coverage": "mkdir -p ./coverage; c8 report --reporter=text-lcov > ./coverage/lcov.info"
   },
   "files": [
     "polyfill.js",
