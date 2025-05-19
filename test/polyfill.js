@@ -1,7 +1,12 @@
+// same as polyfill.js with faster decoding that
+// skips logic if no transferred data is present
+// ... this is obtrusive and doesn't work if
+// data arrives from places where no poly is used
+
 import {
   symbol, register, unregister, transfer,
   serialize, deserialize
-} from './index.js';
+} from '../index.js';
 
 let {
   BroadcastChannel,
@@ -32,7 +37,7 @@ if (!SerializationRegistry) {
       const { postMessage } = prototype;
       defineProperty(prototype, 'postMessage', {
         value(data, ...args) {
-          postMessage.call(this, serialize(data), ...args);
+          postMessage.call(this, encode(data), ...args);
         }
       });
     }
@@ -40,7 +45,7 @@ if (!SerializationRegistry) {
 
   const reviveData = event => {
     if (!revived.has(event))
-      revived.add(define(event, 'data', deserialize(event.data)));
+      revived.add(define(event, 'data', decode(event.data)));
     return event;
   };
 
@@ -48,9 +53,17 @@ if (!SerializationRegistry) {
     self.addEventListener('message', reviveData);
   };
 
+  const encode = data => {
+    transfered = false;
+    return [serialize(data), transfered];
+  };
+
+  const decode = ([data, transfered]) => transfered ? deserialize(data) : data;
+
   const define = (t, p, value) => defineProperty(t, p, { value });
 
   const revived = new WeakSet;
+  let transfered = false;
 
   patchMessages(globalThis);
 
@@ -61,14 +74,17 @@ if (!SerializationRegistry) {
       symbol,
       register,
       unregister,
-      transfer,
+      transfer(uid, structured) {
+        transfered = true;
+        return transfer(uid, structured);
+      }
     })
   );
 
   define(
     globalThis,
     'structuredClone',
-    (value, options) => deserialize(structuredClone(serialize(value), options))
+    (value, options) => decode(structuredClone(encode(value), options))
   );
 
   if (MessageChannel && MessagePort) {

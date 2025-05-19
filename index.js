@@ -72,13 +72,13 @@ const encode = (data, cache) => {
     value = data[symbol];
     if (value) return set(cache, data, value);
     if (isArray(data)) {
-      const value = set(cache, data, []);
+      value = set(cache, data, []);
       for (let i = 0, length = data.length; i < length; i++)
         value[i] = encode(data[i], cache);
       return value;
     }
     if (!isView(data) && isLiteral(data)) {
-      const value = set(cache, data, {});
+      value = set(cache, data, {});
       for (const key in data)
         value[key] = encode(data[key], cache);
       return value;
@@ -95,20 +95,22 @@ const decode = (data, cache) => {
     // if you revive data as falsy ... please don't in here, thanks!
     let value = cache.get(data);
     if (value) return value;
-    // flag data as known to avoid cyclic/recursive resolution
-    cache.set(data, data);
-    if (data.constructor === Object) {
-      for (const key in data)
-        data[key] = decode(data[key], cache);
-    }
-    else if (data instanceof Error) {
-      value = registry.get(data.message);
-      // re-set occasionally and only once data
-      if (value) return set(cache, data, value(data.cause));
-    }
-    else if (isArray(data)) {
-      for (let i = 0, length = data.length; i < length; i++)
-        data[i] = decode(data[i], cache);
+    switch (data.constructor) {
+      case Object:
+        for (const key in set(cache, data, data))
+          data[key] = decode(data[key], cache);
+        break;
+      case Array:
+        for (let i = 0, l = set(cache, data, data).length; i < l; i++)
+          data[i] = decode(data[i], cache);
+        break;
+      case Error:
+        value = registry.get(data.message);
+        if (value) return set(cache, data, value(data.cause));
+        // falls through
+      default:
+        cache.set(data, data);
+        break;
     }
   }
   return data;
