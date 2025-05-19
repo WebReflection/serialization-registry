@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SerializationRegistry Polyfill</title>
+  <script type="module">
+    import '../polyfill.js';
+    import { Serializable, Structured } from './serializable.js';
+
+    const w = new Worker('worker.js', { type: 'module' });
+    w.postMessage(new Serializable([1, 2, 3]));
+    w.postMessage(new Structured('data'));
+  </script>
+</head>
+</html>
