@@ -1,6 +1,6 @@
 import { symbol, register, unregister, transfer, serialize, deserialize } from './index.js';
 
-const { BroadcastChannel, MessageChannel, MessagePort, SerializationRegistry, Worker } = globalThis;
+let { BroadcastChannel, MessageChannel, MessagePort, SerializationRegistry, Worker } = globalThis;
 
 if (!SerializationRegistry) {
   const { defineProperty, getOwnPropertyDescriptor } = Object;
@@ -72,8 +72,7 @@ if (!SerializationRegistry) {
     };
   }
 
-  patchMessages({ prototype: globalThis });
-  defineProperty(globalThis, 'SerializationRegistry', {
+  SerializationRegistry = {
     configurable: true,
     value: {
       symbol,
@@ -81,7 +80,9 @@ if (!SerializationRegistry) {
       unregister,
       transfer,
     },
-  });
+  };
+  patchMessages({ prototype: globalThis });
+  defineProperty(globalThis, 'SerializationRegistry', SerializationRegistry);
 }
 
-export default globalThis.SerializationRegistry;
+export default SerializationRegistry;
