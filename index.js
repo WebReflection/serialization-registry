@@ -1,5 +1,4 @@
 const { isArray } = Array;
-const { isView } = ArrayBuffer;
 const { getPrototypeOf, prototype } = Object;
 const { toString } = prototype;
 
@@ -33,12 +32,12 @@ export const unregister = uid => {
 
 /**
  * Create a transferable reference that will be revived if registered.
- * Current implementation abuses the Error API to survive Structured Clone.
+ * Current implementation uses a Map to survive Structured Clone.
  * @param {string} uid
  * @param {object} structured
  * @returns {Transfer}
  */
-export const transfer = (uid, structured) => new Error(uid, { cause: structured });
+export const transfer = (uid, structured) => new Map([[uid, structured]]);
 
 // POLYFILL's HELPERS
 
@@ -77,7 +76,7 @@ const encode = (data, cache) => {
         value[i] = encode(data[i], cache);
       return value;
     }
-    if (!isView(data) && isLiteral(data)) {
+    if (isLiteral(data)) {
       value = set(cache, data, {});
       for (const key in data)
         value[key] = encode(data[key], cache);
@@ -104,9 +103,13 @@ const decode = (data, cache) => {
         for (let i = 0, l = set(cache, data, data).length; i < l; i++)
           data[i] = decode(data[i], cache);
         break;
-      case Error:
-        value = registry.get(data.message);
-        if (value) return set(cache, data, value(data.cause));
+      case Map:
+        if (data.size === 1) {
+          for (const [uid, structured] of data) {
+            value = registry.get(uid);
+            if (value) return set(cache, data, value(structured));
+          }
+        }
         // falls through
       default:
         cache.set(data, data);

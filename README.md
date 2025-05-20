@@ -100,3 +100,13 @@ import '@ungap/serialization-registry/polyfill';
 console.log(SerializationRegistry);
 // symbol, register, unregister, transfer
 ```
+
+## Limitations
+
+To keep it fast and simple the recursion happens only to simple references such as *arrays* and *objects*.
+
+This means that *Map* or *Set* or any other clonable reference won't be crawled internally.
+
+However, if you extend any of those classes and implement `SerializationRegistry.symbol` getter in their protototype, this will still be reached while serializing so that in there it's possible to eventually crawl internally data and discover serializable field.
+
+**If natively implemented** this limitation won't exsist because all data will be reached to verify it's specially serializable or not.

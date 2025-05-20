@@ -27,6 +27,11 @@ result = deserialize(structuredClone(serialize([result, result])));
 result = deserialize(structuredClone(serialize(new Error('test'))));
 console.assert(result instanceof Error);
 
+result = deserialize(structuredClone(serialize(new Map([['test', 'test']]))));
+console.assert(result instanceof Map);
+console.assert(result.size === 1);
+console.assert(result.get('test') === 'test');
+
 class Serializable {
   constructor(data) {
     this.data = data;
