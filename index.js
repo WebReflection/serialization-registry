@@ -45,7 +45,7 @@ export const transfer = (uid, structured) => new Map([[uid, structured]]);
 // gets embedded/bundled multiple times per project
 const registry = globalThis[symbol] || (globalThis[symbol] = new Map);
 
-const isObject = value => typeof value === 'object' && value !== null;
+const isObject = (value, type) => type === 'object' && value !== null;
 
 const isLiteral = (ref, name = toString.call(ref).slice(8, -1)) =>
   name in globalThis ?
@@ -63,7 +63,8 @@ const set = (cache, key, value) => {
 };
 
 const encode = (data, cache) => {
-  if (isObject(data)) {
+  const type = typeof data;
+  if (isObject(data, type) || type === 'function') {
     // speed up with O(1) operation instead of O(2) (has + get)
     // if you transform data as falsy ... please don't in here, thanks!
     let value = cache.get(data);
@@ -89,7 +90,7 @@ const encode = (data, cache) => {
 export const serialize = data => encode(data, new Map);
 
 const decode = (data, cache) => {
-  if (isObject(data)) {
+  if (isObject(data, typeof data)) {
     // speed up with O(1) operation instead of O(2) (has + get)
     // if you revive data as falsy ... please don't in here, thanks!
     let value = cache.get(data);
